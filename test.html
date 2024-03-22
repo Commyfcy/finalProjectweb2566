@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Work6</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/vuetify@3.4.10/dist/vuetify.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/vuetify@3.4.10/dist/vuetify.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/@mdi/font@5.x/css/materialdesignicons.min.css" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <style>
+    .bg-custom01 {
+    background-color: #0D0756; /* เปลี่ยน #your_custom_color เป็นโค้ดสีของกรมท่าที่คุณต้องการใช้ */
+    color: white;
+    align-items: center;
+  }
+
+  .bg-custom02 {
+    background-color: #ffffff; /* เปลี่ยน #your_custom_color เป็นโค้ดสีของกรมท่าที่คุณต้องการใช้ */
+   
+  }
+
+  .bg-custom02 .v-btn {
+    background-color: #B4AAFF;
+    color: black; /* เปลี่ยนสีตัวหนังสือเป็นสีขาว */
+    margin: auto; /* กำหนดให้ปุ่มอยู่ตรงกลาง */
+  }
+
+  .bg-custom03 {
+    background-color: #ffffff; /* เปลี่ยน #your_custom_color เป็นโค้ดสีของกรมท่าที่คุณต้องการใช้ */
+   
+  }
+
+  .bg-custom03 .v-btn {
+    background-color: #B4AAFF;
+    color: black; /* เปลี่ยนสีตัวหนังสือเป็นสีขาว */
+    
+  }
+  </style>
+
+
+</head>
+
+<body>
+
+  <div id="app">
+    <v-app v-if="state==0">
+      <v-container>
+        <v-card>
+          <v-card-title class="bg-custom01">{{title}}</v-card-title>
+          <v-card-actions class="bg-custom02">
+
+            <v-btn @click="google_login()" v-if="!user"> Login</v-btn>
+            <v-btn @click="google_logout()" v-if="user"> Logout</v-btn>
+            <v-btn @click="continueToPage()" v-if="user">Continue</v-btn>
+
+          </v-card-actions>
+
+          <v-bottom-navigation class="bg-custom01">
+            <div class="text-body-1">{{footer}}</div>
+          </v-bottom-navigation>
+        </v-card>
+      </v-container>
+    </v-app>
+
+    <v-app v-if="state==1">
+      <h1>Teacher</h1>
+      <template>
+        <div>
+          <!-- ส่วนของรายการคำถาม -->
+          <div v-if="questions.length > 0">
+            <h2>รายการคำถาม</h2>
+            <ul>
+              <li v-for="question in questions" :key="question.id">
+                <span>{{ question.question }}</span>
+                <button @click="getAnswers(question.id)">ดูคำตอบ</button>
+              </li>
+            </ul>
+          </div>
+
+          <!-- ส่วนของรายชื่อนักเรียนที่เข้าเรียนได้ -->
+          <div v-if="checkedStudents.length > 0">
+            <h2>รายชื่อนักเรียนที่เข้าเรียนได้</h2>
+            <ul>
+              <li v-for="student in checkedStudents" :key="student.id">
+                <span>{{ student.name }}</span>
+                <!-- เพิ่มข้อมูลอื่น ๆ ตามต้องการ -->
+              </li>
+            </ul>
+          </div>
+        </div>
+      </template>
+      <v-container>
+        <v-card>
+          <v-card-title class="bg-custom01">{{title}}</v-card-title>
+          <v-card-actions class="bg-custom03">
+            <template v-if="user">
+              <div class="pa-2">
+                <v-avatar><img :src="user.photoURL" /></v-avatar>
+              </div>
+              <div class="pa-2">
+                {{user.displayName}}<br />
+                {{user.email}}<br />
+                {{ustudent}}<br />
+              </div>
+
+            </template>
+            <v-btn @click="google_login()" v-if="!user"> Login</v-btn>
+            <v-btn @click="google_logout()" v-if="user"> Logout</v-btn>
+
+
+          </v-card-actions>
+
+
+          <v-card-text class="pa-6">
+            <table width="100%">
+              <thead>
+                <tr>
+                  <td>รหัส</td>
+                  <td>วิชา</td>
+                  <td>ห้อง</td>
+                  <td>เวลา</td>
+                  <td>คำถาม</td>
+                  <td>คำตอบ</td>
+                  <td>โดย</td>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(c) in checkin">
+                  <td>{{c.id}}</td>
+                  <td>{{c.subject}}</td>
+                  <td>{{c.room}}</td>
+                  <td>{{c.class_date}}</td>
+                  <td>{{c.question}}</td>
+                  <td>{{c.answer}}</td>
+                  <td>{{c.answer_by}}</td>
+                  <td>
+                    <v-btn @click="edit2(c)"><v-icon icon="mdi-account-edit"></v-icon>แก้ไข</v-btn>
+                    <v-btn @click="deleteData2(c)"><v-icon icon="mdi-account-remove"></v-icon>ลบ</v-btn>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </v-card-text>
+          
+          <v-card-text class="pa-6">
+            <table width="100%">
+              <thead>
+                <tr>
+                  <td>รหัส</td>
+                  <td>วิชา</td>
+                  <td>ห้อง</td>
+                  <td>คำถาม</td>
+                  <td>เวลา</td>
+                  <td>คำตอบ</td>
+                  <!-- <td>โดย</td> -->
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(q) in questions">
+                  <td>{{q.id}}</td>
+                  <td>{{q.subject}}</td>
+                  <td>{{q.room}}</td>
+                  <td>{{q.question}}</td>
+                  <td>{{q.class_date}}</td>
+                  <td>{{q.answer}}</td>
+                  <!-- <td>{{q.answer_by}}</td> -->
+                </tr>
+              </tbody>
+            </table>
+          </v-card-text>
+          <v-card-actions class="bg-custom03">
+            <v-btn @click="addData2()">เพิ่มการเช็คชื่อ</v-btn>
+            <v-btn @click="loadCheckins()">ตรวจสอบการเช็ตชื่อ</v-btn>
+            <v-btn @click="readCheckin()">ดูรหัสเช็คอินทั้งหมด</v-btn>
+            <v-btn @click="autoRead()">ดูรหัสเช็คอินทั้งหมดแบบเรียลไทม์</v-btn>
+          </v-card-actions>
+        </v-card>
+
+
+
+        <v-card v-if="editmode2">
+          <v-card-text class="pa-6">
+            <v-card-title class="bg-custom01">{{editmode2}}</v-card-title>
+            <v-text-field v-model="editcheckin.id" label="รหัส"></v-text-field>
+            <v-text-field v-model="editcheckin.subject" label="วิชา"></v-text-field>
+            <v-text-field v-model="editcheckin.room" label="ห้อง"></v-text-field>
+            <v-text-field v-model="editcheckin.class_date" label="เวลา"></v-text-field>
+            <v-text-field v-model="editcheckin.question" label="คำถาม"></v-text-field>
+          </v-card-text>
+          <v-card-actions class="bg-custom03">
+            <v-btn @click="savedata2()">Save</v-btn>
+            <v-btn @click="editmode2=0">Cancel</v-btn>
+          </v-card-actions>
+        </v-card>
+
+        <div class="pa-6 text-center">{{footer}}</div>
+      </v-container>
+    </v-app>
+
+
+    <v-app v-if="state==2">
+      <v-card-actions class="bg-custom03">
+        <template  v-if="user">
+          <div class="pa-2">
+            <v-avatar><img :src="user.photoURL" /></v-avatar>
+          </div>
+          <div class="pa-2">
+            {{user.displayName}}<br />
+            {{user.email}}<br />
+            {{ustudent}}<br />
+          </div>
+
+        </template>
+        <v-btn @click="google_login()" v-if="!user"> Login</v-btn>
+        <v-btn @click="google_logout()" v-if="user"> Logout</v-btn>
+      </v-card-actions>
+      <v-card>
+        <v-card-text class="pa-6">
+          <v-card-title class="bg-custom01">กรอกรหัสเข้าเรียน</v-card-title>
+          <!-- ให้ใช้ v-model เพื่อผูกข้อมูลในรูปแบบ two-way binding -->
+          <v-text-field v-model="inputCode" label="รหัส"></v-text-field>
+
+          <v-card-actions  class="bg-custom03">
+            <!-- เมื่อคลิกที่ปุ่ม Submit ให้เรียกใช้เมธอด submitCode() -->
+            <v-btn @click="submitCode()">Submit</v-btn>
+          </v-card-actions>
+        </v-card-text>
+      </v-card>
+      <v-card v-if="submitted">
+        <v-card-text class="pa-6">
+          <v-card-title class="bg-custom01">ข้อมูลการเช็คชื่อ</v-card-title>
+          <!-- แสดงข้อมูลที่ได้จากการค้นหาในฐานข้อมูล -->
+    
+          
+          <table width="100%">
+            <thead>
+              <tr>
+                <td>รหัส</td>
+                <td>วิชา</td>
+                <td>ห้อง</td>
+                <td>คำถาม</td>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- ใช้ v-for เพื่อวนลูปแสดงข้อมูลที่ได้จาก checkin -->
+              <tr v-for="(c) in checkin" :key="c.id">
+                <td><v-text-field v-model="c.id" v-model="checkin.id"></v-text-field></td>
+                <td><v-text-field v-model="c.subject" v-model="checkin.subject"></v-text-field></td>
+                <td><v-text-field v-model="c.room" v-model="checkin.room"></v-text-field></td>
+                <td><v-text-field v-model="c.question" v-model="checkin.question"></v-text-field></td>
+              </tr>
+            </tbody>
+          </table>
+          <!-- Add v-model for class_date and question, assuming these fields are editable -->
+          <v-text-field v-model="checkin.class_date" label="เวลา"></v-text-field>
+          <v-text-field v-model="checkin.answer" label="คำตอบ"></v-text-field>
+          <v-card-actions class="bg-custom02">
+            <v-btn @click="submitAnswersAndCheckIn()">ส่งคำตอบและเช็คชื่อ</v-btn>
+          </v-card-actions>
+        </v-card-text>
+      </v-card>
+      
+    </v-app>
+
+    
+  </div>
+  <script>
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAfbjLiRSXS_2GW1gJ1PZmhxC7gdsLAYEI",
+      authDomain: "finalproject2566-246f3.firebaseapp.com",
+      projectId: "finalproject2566-246f3",
+      storageBucket: "finalproject2566-246f3.appspot.com",
+      messagingSenderId: "1072364334088",
+      appId: "1:1072364334088:web:e64f5a70ad50bc94e835bd",
+      measurementId: "G-RXBV8MXHTK"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const vuetify = Vuetify.createVuetify();
+    const app = Vue.createApp({
+      data() {
+        return {
+          formData: {
+        id: '',
+        questions: '',
+        answer: ''
+      },
+          title: "Final Project",
+          footer: "643020374-7 ธนกฤต เสาใบ, 643020354-3 กีรติ โพธิ์ศรี , 643020360-8 ฉัตรมงคล อัตถาชน",
+          students: [],
+          checkin: [],
+          questions: [], // รายการคำถาม
+          checkedStudents: [], // รายชื่อนักเรียนที่เข้าเรียนได้
+          editstd: {},
+          editcheckin: {},
+          editmode: 0,
+          editmode2: 0,
+          user: null,
+          ustudent: null,
+          state: 0,
+          inputCode: "",
+          submitted: false,
+          checkdata:"",
+
+        };
+      },
+      mounted() {
+        firebase.auth().onAuthStateChanged((user) => {
+          if (user) {
+            this.user = user.toJSON();
+          } else {
+            this.user = null;
+          }
+        });
+      },
+      methods: {
+    // Method สำหรับ submit ฟอร์ม
+    submitForm() {
+      // สร้าง reference ของ document ใน collection 'users'
+      const userRef = db.collection('checkin').doc('id'); // เปลี่ยน 'user_id' เป็น ID ของเอกสารที่ต้องการอัปเดต
+      // อัปเดตข้อมูลของเอกสาร
+      userRef.update(this.formData)
+        .then(() => {
+          console.log('Document successfully updated!');
+          // ทำอะไรต่อเมื่อข้อมูลถูกอัปเดตสำเร็จ
+        })
+        .catch((error) => {
+          console.error('Error updating document: ', error);
+        });
+    },
+
+
+
+        submitCode() {
+    // ตรวจสอบว่ารหัสได้รับการกรอกหรือไม่
+    if (this.inputCode === '') {
+        this.submitted = false
+        alert('กรุณากรอกรหัสเข้าเรียน'); // แสดงข้อความเตือนหากไม่ได้กรอกรหัส
+        return;
+    }
+    // ค้นหาข้อมูลในฐานข้อมูล
+    db.collection("checkin").where("id", "==", this.inputCode)
+        .get()
+        .then((querySnapshot) => {
+            if (querySnapshot.empty) {
+                // หากไม่พบข้อมูลในฐานข้อมูล แสดงข้อความเตือน
+                this.submitted = false
+                alert('ไม่พบข้อมูลรหัสเข้าเรียนนี้ในฐานข้อมูล');
+            } else {
+                // หากพบข้อมูล กำหนดค่าให้ submitted เป็น true เพื่อแสดงผลลัพธ์
+                this.submitted = true;
+                // ดึงข้อมูลเช็คอินและแสดงผลลัพธ์
+                let checkinlist = [];
+                querySnapshot.forEach((doc) => {
+                    checkinlist.push({ id: doc.id, ...doc.data() });
+                });
+                this.checkin = checkinlist;
+                
+            }
+        })
+        .catch((error) => {
+            console.error("Error getting documents: ", error);
+        });
+    },
+
+    submitAnswersAndCheckIn() {
+    let newData = {
+        //id: this.checkin.id,
+       // subject: this.checkin.subject,
+       // room: this.checkin.room,
+       // question: this.checkin.question,
+        class_date: this.checkin.class_date,
+        answer: this.checkin.answer,
+        // เพิ่มฟิลด์ต่าง ๆ ตามต้องการ
+    };
+
+    db.collection("questions").set(newData)
+        .then((docRef) => {
+            console.log("Document written with ID: ", docRef.id);
+            // รีเซ็ตฟิลด์อินพุตหรือดำเนินการเพิ่มเติมตามที่จำเป็น
+           // this.checkin.id = '';
+            //this.checkin.subject = '';
+           // this.checkin.room = '';
+            //this.checkin.question = '';
+            this.checkin.class_date = '' ; // ล้างฟิลด์ class_date
+            this.checkin.answer = ''; // ล้างฟิลด์ answer
+        })
+        .catch((error) => {
+            console.error("Error adding document: ", error);
+        });
+},
+
+    // โหลดรายการการเช็คชื่อ
+    loadCheckins() {
+        db.collection('questions').get().then((querySnapshot) => {
+            let questions = [];
+            querySnapshot.forEach((doc) => {
+              questions.push({ id: doc.id, ...doc.data() });
+            });
+            this.questions = questions;
+        }).catch((error) => {
+            console.error("Error getting documents: ", error);
+        });
+    },
+        readCheckin() {
+          db.collection("checkin")
+            .get()
+            .then((querySnapshot) => {
+              var checkinlist = [];
+              querySnapshot.forEach((doc) => {
+                checkinlist.push({ id: doc.id, ...doc.data() });
+              });
+              this.checkin = checkinlist;
+
+            });
+        },
+        readData() {
+          db.collection("students")
+            .get()
+            .then((querySnapshot) => {
+              var stdlist = [];
+              querySnapshot.forEach((doc) => {
+                stdlist.push({ id: doc.id, ...doc.data() });
+              });
+              this.students = stdlist;
+            });
+        },
+        readData2() {
+          db.collection("checkin")
+            .get()
+            .then((querySnapshot) => {
+              var scheckinlist = [];
+              querySnapshot.forEach((doc) => {
+                scheckinlist.push({ id: doc.id, ...doc.data() });
+              });
+              this.checkin = checkinlist;
+            });
+        },
+        autoRead() {
+          db.collection("students").onSnapshot((querySnapshot) => {
+            var stdlist = [];
+            querySnapshot.forEach((doc) => {
+              stdlist.push({ id: doc.id, ...doc.data() });
+            });
+            this.students = stdlist;
+          });
+          db.collection("checkin").onSnapshot((querySnapshot) => {
+            var checkinlist = [];
+            querySnapshot.forEach((doc) => {
+              checkinlist.push({ id: doc.id, ...doc.data() });
+            });
+            this.checkin = checkinlist;
+          });
+        },
+        savedata() {
+          db.collection("students").doc(this.editstd.id).set(this.editstd);
+        },
+        savedata2() {
+          db.collection("checkin").doc(this.editcheckin.id).set(this.editcheckin);
+        },
+        deleteData(std) {
+          if (confirm("ต้องการลบข้อมูล")) {
+            db.collection("students").doc(std.id).delete();
+          }
+        },
+        deleteData2(checkin) {
+          if (confirm("ต้องการลบข้อมูล")) {
+            db.collection("checkin").doc(checkin.id).delete();
+          }
+        },
+
+        edit(std) {
+          this.editstd = std;
+          this.editmode = "แก้ไขนักเรียน";
+        },
+        edit2(checkin) {
+          this.editcheckin = checkin;
+          this.editmode2 = "แก้ไขรหัสห้องเรียน";
+        },
+        addData() {
+          this.editmode = "เพิ่มนักเรียน";
+          this.editstd = {};
+        },
+        addData2() {
+          this.editmode2 = "เพิ่มรหัส";
+          this.editcheckin = {};
+        },
+        google_login() {
+          var provider = new firebase.auth.GoogleAuthProvider();
+          provider.addScope("profile");
+          provider.addScope("email");
+          firebase.auth().signInWithPopup(provider)
+            .then((result) => {
+              // ผู้ใช้ล็อกอินสำเร็จ
+              var user = result.user;
+              var email = user.email;
+
+              // ตรวจสอบว่า email ได้ทำการ Authentication ไว้หรือไม่
+              db.collection("teachers")
+                .where("email", "==", email)
+                .get()
+                .then((querySnapshot) => {
+                  if (querySnapshot.size > 0) {
+                    // email ได้ทำการ Authentication ไว้
+                    this.state = 1; // นำทางไปหน้า state = 1
+                  } else {
+                    // email ไม่ได้ทำการ Authentication ไว้
+                    this.state = 2; // นำทางไปหน้า state = 2
+                  }
+                })
+                .catch((error) => {
+                  console.error(error);
+                });
+            })
+            .catch((error) => {
+              // ผู้ใช้ล็อกอินไม่สำเร็จ
+              console.error(error);
+            });
+        },
+        google_logout() {
+          if (confirm("Are you sure?")) {
+            firebase.auth().signOut();
+            this.state = 0;
+          }
+
+
+        },
+        getstudent(email) {
+          db.collection("students")
+            .where("email", "==", email)
+            .limit(1)
+            .get()
+            .then(
+              (querySnapshot) => {
+                querySnapshot.forEach((doc) => {
+                  this.ustudent = { id: doc.id, ...doc.data() };
+                });
+              }
+            );
+        },
+
+        navigateToStudentPage() {
+          state = 1;
+        },
+
+        navigateToTeacherPage() {
+          state = 2;
+        },
+        continueToPage() {
+          if (this.user) {
+            // ตรวจสอบว่าเป็นอาจารย์หรือนักเรียน
+            db.collection("teachers")
+              .where("email", "==", this.user.email)
+              .get()
+              .then((querySnapshot) => {
+                if (querySnapshot.size > 0) {
+                  // ถ้าเป็นอาจารย์
+                  this.state = 1; // นำทางไปยังหน้า Teacher
+                } else {
+                  // ถ้าไม่ใช่อาจารย์เป็นนักเรียน
+                  this.getstudent(this.user.email); // เรียกใช้ฟังก์ชัน getstudent เพื่อดึงข้อมูลนักเรียน
+                  this.state = 2; // นำทางไปยังหน้า Student
+                }
+              })
+              .catch((error) => {
+                console.error(error);
+              });
+          }
+        }
+
+      },
+    });
+    app.use(vuetify).mount("#app");
+  </script>
+</body>
+
+</html>
